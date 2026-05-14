@@ -1,0 +1,26 @@
+{
+  "name": "fruitrun",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shogo-Toiyama/FruitRun.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Shogo-Toiyama/FruitRun/issues"
+  },
+  "homepage": "https://github.com/Shogo-Toiyama/FruitRun#readme",
+  "dependencies": {
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "vite": "^8.0.12"
+  }
+}
