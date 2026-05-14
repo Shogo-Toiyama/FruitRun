@@ -3,12 +3,19 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-// Initialize position
+// Initialize player 
 let playerX = 0;
 const playerSpeed = 5.0;
-const pathWidth = 4.0;
 const keyboard = {};
 const clock = new THREE.Clock();
+
+// Initialize path
+const pathLength = 500;
+const pathWidth = 4.0;
+const pathHeight = 10;
+
+// Initalize background
+scene.background = new THREE.Color( 0x87CEEB );
 
 function addKeysListener() {
     window.addEventListener('keydown', (event) => {
@@ -26,12 +33,32 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.setAnimationLoop( animate );
 document.body.appendChild( renderer.domElement );
 
+function addLighting() {
+    // Directional light
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(5, 10, 7);
+    scene.add(light);    
+
+    // Ambient light
+    const ambient = new THREE.AmbientLight(0x404040);
+    scene.add(ambient);    
+}
+addLighting();
+
+// Cube
 const cube = new THREE.Mesh( 
     new THREE.BoxGeometry( 1, 1, 1 ),
     new THREE.MeshBasicMaterial( { color: 0x00ff00 } )
-    );
+);
 cube.matrixAutoUpdate = false;
 scene.add( cube );
+
+// Path
+const path = new THREE.Mesh(
+    new THREE.BoxGeometry( 10, 0.1, 50 ),
+    new THREE.MeshPhongMaterial( {color: 0x8b4513})
+)
+scene.add( path );
 
 camera.position.z = 5;
 camera.position.y = 1;
