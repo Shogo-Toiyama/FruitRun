@@ -11,7 +11,7 @@ const timer = new THREE.Timer();
 const pathLength = 1000;
 const pathWidth = 10;
 const pathHeight = 0.1;
-const grassWidth = 500;
+const grassWidth = 500; 
 
 let scene, camera, renderer, controls, cube, player, tree, rock, log;
 
@@ -52,20 +52,10 @@ function initLighting() {
 }
 
 function initEnvironment() {
-    // Create axis lines
-    const xAxis = createAxisLine(0xff0000, new THREE.Vector3(0, 0, 0), new THREE.Vector3(5, 0, 0)); // Red
-    const yAxis = createAxisLine(0x00ff00, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 5, 0)); // Green
-    const zAxis = createAxisLine(0x0000ff, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 5)); // Blue
-
-    // Add axes to scene
-    // scene.add(xAxis);
-    // scene.add(yAxis);
-    // scene.add(zAxis);
-    
     // Grass
     const grass = new THREE.Mesh(
         new THREE.PlaneGeometry(grassWidth, pathLength),
-        new THREE.MeshPhongMaterial({ color: 0x228b22 })
+        new THREE.MeshPhongMaterial({ color: 0x2FA829 })
     );
     grass.matrixAutoUpdate = false;
     let grass_T = new THREE.Matrix4();
@@ -224,12 +214,6 @@ function initEnvironment() {
     log.rotation.z = Math.PI / 2;
     scene.add(log);
 
-}
-
-function createAxisLine(color, start, end) {
-    const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-    const material = new THREE.LineBasicMaterial({ color: color });
-    return new THREE.Line(geometry, material);
 }
 
 function addKeysListener() {
