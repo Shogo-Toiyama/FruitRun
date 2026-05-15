@@ -5,7 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 let playerX = 0;
 const playerSpeed = 5.0;
 const keyboard = {};
-const clock = new THREE.Clock();
+const timer = new THREE.Timer();
 
 // Environment settings
 const pathLength = 1000;
@@ -13,7 +13,7 @@ const pathWidth = 10;
 const pathHeight = 0.1;
 const grassWidth = 500;
 
-let scene, camera, renderer, controls, cube;
+let scene, camera, renderer, controls, cube, player, tree, rock, log;
 
 function init() {
     // Initalize background
@@ -58,9 +58,9 @@ function initEnvironment() {
     const zAxis = createAxisLine(0x0000ff, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 5)); // Blue
 
     // Add axes to scene
-    scene.add(xAxis);
-    scene.add(yAxis);
-    scene.add(zAxis);
+    // scene.add(xAxis);
+    // scene.add(yAxis);
+    // scene.add(zAxis);
     
     // Grass
     const grass = new THREE.Mesh(
@@ -88,7 +88,96 @@ function initEnvironment() {
     );
     
     cube.matrixAutoUpdate = false;
-    scene.add( cube );
+    // scene.add( cube );
+
+    // Player
+    player = new THREE.Group();
+
+    const head = new THREE.Mesh(
+        new THREE.SphereGeometry(0.7, 32, 32),
+        new THREE.MeshPhongMaterial({ color: 0xffe6ce })
+    );
+    head.position.y = 1.5;
+    player.add(head);
+
+    const hat = new THREE.Mesh(
+        new THREE.SphereGeometry(0.8, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshPhongMaterial({ color: 0xff0000 })
+    );
+    hat.position.y = 1.6;
+    player.add(hat);
+
+    const brim = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.2, 1.2, 0.1, 32),
+        new THREE.MeshPhongMaterial({ color: 0xff0000 })
+    );
+    brim.position.y = 1.6;
+    player.add(brim);
+
+    const body = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.4, 0.8, 1, 32),
+        new THREE.MeshPhongMaterial({ color: 0xff7777 })
+    );
+    body.position.y = 0.5;
+    player.add(body);
+
+    const leftArm = new THREE.Mesh(
+        new THREE.ConeGeometry(0.3, 1, 32),
+        new THREE.MeshPhongMaterial({ color: 0xff7777 })
+    );
+    leftArm.position.set(-0.5, 0.6, 0);
+    leftArm.rotation.z = - Math.PI / 5;
+    player.add(leftArm);
+
+    const rightArm = new THREE.Mesh(
+        new THREE.ConeGeometry(0.3, 1, 32),
+        new THREE.MeshPhongMaterial({ color: 0xff7777 })
+    );
+    rightArm.position.set(0.5, 0.6, 0);
+    rightArm.rotation.z = Math.PI / 5;
+    player.add(rightArm);
+
+    scene.add(player);
+
+
+    // Obstacles
+    // 1. Tree
+    const tree = new THREE.Group();
+    
+    const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.3, 0.3, 2, 32),
+        new THREE.MeshPhongMaterial({ color: 0x8b4513 })
+    );
+    trunk.position.y = 0;
+    tree.add(trunk);
+
+    const leaves = new THREE.Mesh(
+        new THREE.ConeGeometry(1, 3, 32),
+        new THREE.MeshPhongMaterial({ color: 0x228b22 })
+    );
+    leaves.position.y = 2;
+    tree.add(leaves);
+
+    tree.position.set(2, 1, -10);
+    scene.add(tree);
+
+    // 2. Rock
+    const rock = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(1.5, 0),
+        new THREE.MeshPhongMaterial({ color: 0x808080 })
+    );
+    rock.position.set(-2, 0.5, -20);
+    scene.add(rock);
+
+    // 3. Log
+    const log = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32),
+        new THREE.MeshPhongMaterial({ color: 0x502010 })
+    );
+    log.position.set(0, 0.5, -5);
+    log.rotation.x = Math.PI / 2;
+    log.rotation.z = Math.PI / 2;
+    scene.add(log);
 
 }
 
@@ -117,7 +206,7 @@ function movePlayer(delta) {
     if(keyboard["KeyD"]) {
         playerX += playerSpeed * delta;
     }
-    cube.matrix.copy(translationMatrix(playerX, 0.5, 0));
+    player.position.set(playerX, 0.5, 0);
 }
 
 // Transformation Matrices
@@ -149,8 +238,9 @@ function rotationMatrixZ(theta) {
 }
 
 
-function animate() {
-    const delta = clock.getDelta();
+function animate(timestamp) {
+    timer.update(timestamp);
+    const delta = timer.getDelta();
     movePlayer(delta);
     // followPlayer();
 
