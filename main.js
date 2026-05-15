@@ -228,11 +228,11 @@ addKeysListener();
 
 function movePlayer(delta) {
     // Left movement on A
-    if(keyboard["KeyA"]) {
+    if(keyboard["KeyA"] || keyboard["ArrowLeft"]) {
         playerX -= playerSpeed * delta;
     }
     // right movement on D
-    if(keyboard["KeyD"]) {
+    if(keyboard["KeyD"] || keyboard["ArrowRight"]) {
         playerX += playerSpeed * delta;
     }
     playerX = Math.max(-4, Math.min(4, playerX));
