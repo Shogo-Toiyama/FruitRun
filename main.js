@@ -7,10 +7,11 @@ const playerSpeed = 5.0;
 const keyboard = {};
 const clock = new THREE.Clock();
 
-// Initialize path
-const pathLength = 500;
-const pathWidth = 4.0;
-const pathHeight = 10;
+// Environment settings
+const pathLength = 1000;
+const pathWidth = 10;
+const pathHeight = 0.1;
+const grassWidth = 500;
 
 let scene, camera, renderer, controls, cube;
 
@@ -21,13 +22,14 @@ function init() {
 
     camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
     camera.position.z = 10;
-    camera.position.y = 10;
+    camera.position.y = 5;
 
     // Render
     renderer = new THREE.WebGLRenderer();
     renderer.setSize( window.innerWidth, window.innerHeight );
     document.body.appendChild( renderer.domElement );    
 
+    // Don't allow for control for the actual game
     controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 5, 0); // Where the camera is looking towards.
 
@@ -60,11 +62,23 @@ function initEnvironment() {
     scene.add(yAxis);
     scene.add(zAxis);
     
+    // Grass
+    const grass = new THREE.Mesh(
+        new THREE.PlaneGeometry(grassWidth, pathLength),
+        new THREE.MeshPhongMaterial({ color: 0x228b22 })
+    );
+    grass.matrixAutoUpdate = false;
+    let grass_T = new THREE.Matrix4();
+    grass_T.multiplyMatrices(rotationMatrixX(-(Math.PI)/2), grass_T);
+    grass.matrix.copy(grass_T);
+    scene.add( grass );
+    
     // Path
     const path = new THREE.Mesh(
-        new THREE.BoxGeometry( 10, 0.1, 50 ),
+        new THREE.BoxGeometry( pathWidth, pathHeight, pathLength ),
         new THREE.MeshPhongMaterial( {color: 0x8b4513})
-    )
+    );
+    path.position.y = 0.1;
     scene.add( path );
 
     // Cube
@@ -72,6 +86,7 @@ function initEnvironment() {
         new THREE.BoxGeometry( 1, 1, 1 ),
         new THREE.MeshBasicMaterial( { color: 0x00ff00 } )
     );
+    
     cube.matrixAutoUpdate = false;
     scene.add( cube );
 
@@ -93,16 +108,6 @@ function addKeysListener() {
 }
 addKeysListener();
 
-
-function translationMatrix(tx, ty, tz) {
-	return new THREE.Matrix4().set(
-		1, 0, 0, tx,
-		0, 1, 0, ty,
-		0, 0, 1, tz,
-		0, 0, 0, 1
-	);
-}
-
 function movePlayer(delta) {
     // Left movement on A
     if(keyboard["KeyA"]) {
@@ -112,8 +117,37 @@ function movePlayer(delta) {
     if(keyboard["KeyD"]) {
         playerX += playerSpeed * delta;
     }
-    cube.matrix.copy(translationMatrix(playerX, 0, 0));
+    cube.matrix.copy(translationMatrix(playerX, 0.5, 0));
 }
+
+// Transformation Matrices
+function translationMatrix(tx, ty, tz) {
+	return new THREE.Matrix4().set(
+		1, 0, 0, tx,
+		0, 1, 0, ty,
+		0, 0, 1, tz,
+		0, 0, 0, 1
+	);
+}
+
+function rotationMatrixX(theta) {
+	return new THREE.Matrix4().set(
+    1, 0, 0, 0,
+    0, Math.cos(theta), -1*Math.sin(theta), 0,
+    0, Math.sin(theta), Math.cos(theta), 0,
+    0, 0, 0, 1
+	);
+}
+
+function rotationMatrixZ(theta) {
+	return new THREE.Matrix4().set(
+    Math.cos(theta), -1*Math.sin(theta), 0, 0,
+    Math.sin(theta), Math.cos(theta), 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+	);
+}
+
 
 function animate() {
     const delta = clock.getDelta();
