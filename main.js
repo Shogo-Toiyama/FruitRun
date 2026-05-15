@@ -21,7 +21,7 @@ function init() {
     scene.background = new THREE.Color( 0x87CEEB );  
 
     camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-    camera.position.z = 10;
+    camera.position.z = 6;
     camera.position.y = 5;
 
     // Render
@@ -115,10 +115,10 @@ function initEnvironment() {
     player.add(brim);
 
     const body = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.4, 0.8, 1, 32),
+        new THREE.CylinderGeometry(0.4, 0.8, 1.5, 32),
         new THREE.MeshPhongMaterial({ color: 0xff7777 })
     );
-    body.position.y = 0.5;
+    body.position.y = 0.2;
     player.add(body);
 
     const leftArm = new THREE.Mesh(
@@ -136,6 +136,51 @@ function initEnvironment() {
     rightArm.position.set(0.5, 0.6, 0);
     rightArm.rotation.z = Math.PI / 5;
     player.add(rightArm);
+
+    const basket = new THREE.Group();
+
+    for (let i = 0; i < 3; i++) {
+        const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(0.15*i+0.3, 0.04, 8, 32),
+            new THREE.MeshPhongMaterial({ color: 0xb06545 })
+        );
+        ring.rotation.x = Math.PI / 2;
+        ring.position.y = i * 0.2;
+        basket.add(ring);
+    }
+
+    for (let i = 0; i < 5; i++) {
+        const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(0.6 - 0.1 * Math.abs(i-2), 0.04, 8, 32, -Math.PI),
+            new THREE.MeshPhongMaterial({ color: 0xb06545 })
+        );
+        ring.position.z = i * 0.2 - 0.4;
+        ring.position.y = 0.45;
+        basket.add(ring);
+    }
+
+    for (let i = 0; i < 5; i++) {
+        const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(0.6 - 0.1 * Math.abs(i-2), 0.04, 8, 32, -Math.PI),
+            new THREE.MeshPhongMaterial({ color: 0xb06545 })
+        );
+        ring.rotation.y = Math.PI/2;
+        ring.position.x = i * 0.2 - 0.4;
+        ring.position.y = 0.45;
+        basket.add(ring);
+    }
+
+    const handle = new THREE.Mesh(
+        new THREE.TorusGeometry(0.5, 0.08, 8, 32, Math.PI),
+        new THREE.MeshPhongMaterial({ color: 0xb06545 })
+    );
+    handle.position.y = 0.35;
+    handle.rotation.y = Math.PI / 2;
+    basket.add(handle);
+
+    basket.rotation.z = Math.PI / 5;
+    basket.position.set(1.5, -0.4, 0);
+    player.add(basket);
 
     scene.add(player);
 
@@ -206,7 +251,8 @@ function movePlayer(delta) {
     if(keyboard["KeyD"]) {
         playerX += playerSpeed * delta;
     }
-    player.position.set(playerX, 0.5, 0);
+    playerX = Math.max(-4, Math.min(4, playerX));
+    player.position.set(playerX, 0.8, 0);
 }
 
 // Transformation Matrices
