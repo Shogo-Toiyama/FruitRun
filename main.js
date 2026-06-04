@@ -13,6 +13,12 @@ const pathWidth = 10;
 const pathHeight = 0.1;
 const grassWidth = 500; 
 
+// Obstacle settings
+const clock = new THREE.Clock();
+const obstacles = [];
+const obstacle_speed = 20.0;
+const spawn_dist = -200; 
+
 let scene, camera, renderer, controls, cube, player, tree, rock, log;
 
 function init() {
@@ -213,7 +219,10 @@ function initEnvironment() {
     log.rotation.x = Math.PI / 2;
     log.rotation.z = Math.PI / 2;
     scene.add(log);
-
+    
+    spawnObstacle(-2, -20);
+    spawnObstacle(2, -40);
+    spawnObstacle(0, -5);
 }
 
 function addKeysListener() {
@@ -237,6 +246,43 @@ function movePlayer(delta) {
     }
     playerX = Math.max(-4, Math.min(4, playerX));
     player.position.set(playerX, 0.8, 0);
+}
+
+function spawnObstacle(x, z) {
+    const rock = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(1.5, 0),
+        new THREE.MeshPhongMaterial({ color: 0x808080 })
+    );
+
+    rock.matrixAutoUpdate = false;
+    scene.add(rock);
+
+    obstacles.push({
+        mesh: rock,
+        x: x,
+        y: 0.5,
+        z: z
+    })
+}
+
+function moveObstacles(delta) {
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        const cur_obs = obstacles[i];
+
+        cur_obs.z += obstacle_speed * delta;
+
+        const T = translationMatrix(cur_obs.x, cur_obs.y, cur_obs.z);
+
+        cur_obs.mesh.matrix.copy(T);
+
+        if (cur_obs.z > 10) {
+            scene.remove(cur_obs.mesh);
+            obstacles.splice(i, 1);
+
+            const randomLane = (Math.floor(Math.random() * 3) - 1) * 1.5;
+            spawnObstacle(randomLane, spawn_dist);
+        }
+    }
 }
 
 // Transformation Matrices
@@ -271,8 +317,10 @@ function rotationMatrixZ(theta) {
 function animate(timestamp) {
     timer.update(timestamp);
     const delta = timer.getDelta();
+    const ani_delta = clock.getDelta();
     movePlayer(delta);
     // followPlayer();
+    moveObstacles(ani_delta);
 
 	renderer.render( scene, camera );
 
