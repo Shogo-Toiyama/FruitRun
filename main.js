@@ -32,6 +32,7 @@ const STATES = {
     CLEAR: 'CLEAR'
 };
 let gameState = STATES.MENU;
+let storyTimeouts = [];
 
 // Invincibility state
 let isInvincible = false;
@@ -77,6 +78,7 @@ function init() {
     initEnvironment();
     addKeysListener();
     setupUIListeners();
+    playStoryLine();
     renderer.setAnimationLoop( animate );
 
 }
@@ -557,6 +559,46 @@ function animate(timestamp) {
 
     controls.update();
 
+}
+
+// Play the storyline
+function playStoryLine() {
+    const container = document.getElementById('story-container');
+    const startBtn = document.getElementById('start-btn');
+
+    if (!container || !startBtn) return;
+
+    container.innerHTML = '';
+    startBtn.classList.add('hidden');
+    storyTimeouts.forEach(clearTimeout);
+    storyTimeouts = [];
+
+    const storyLines = [
+        "You've finished gathering fruit for your family...",
+        "Now, it's time to get back home!",
+        "Avoid the obstacles in your path.",
+        "Every time you collide with an obstacle, you'll lose fruit that could have fed your family!"
+    ];
+
+    const lineDelay = 1600;
+
+    storyLines.forEach((text, index) => {
+        const p = document.createElement('p');
+        p.className = 'story-line';
+        p.innerText = text;
+        container.appendChild(p);
+
+        const t = setTimeout(() => {
+            p.classList.add('visible');
+        }, index * lineDelay);
+        storyTimeouts.push(t);
+    });
+
+    const finalTriggerTime = storyLines.length * lineDelay;
+    const btnTimeout = setTimeout(() => {
+        startBtn.classList.remove('hidden');
+    }, finalTriggerTime);
+    storyTimeouts.push(btnTimeout);
 }
 
 // UI & Game State
