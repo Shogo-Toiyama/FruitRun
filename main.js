@@ -52,19 +52,18 @@ let currentSpeed = BASE_SPEED;
 let distanceSinceLastSpawn = 0;
 let nextSpawnDistance = 30.0 + Math.random() * 40.0;
 
-let scene, camera, renderer, controls, player;
+let scene, camera, renderer, controls, player, grassTexture, pathTexture;;
 
 function init() {
     // Initalize background
     scene = new THREE.Scene();
-    scene.background = new THREE.Color( 0x87CEEB );  
 
     camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
     camera.position.z = 6;
     camera.position.y = 5;
 
     // Render
-    renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer({ alpha: true });
     renderer.setSize( window.innerWidth, window.innerHeight );
     document.body.appendChild( renderer.domElement );    
 
@@ -87,15 +86,22 @@ function initLighting() {
     scene.add(light);    
 
     // Ambient light
-    const ambient = new THREE.AmbientLight(0x404040);
+    const ambient = new THREE.AmbientLight(0xffbb88, 0.3);
     scene.add(ambient);    
 }
 
 function initEnvironment() {
     // Grass
+    const textureLoader = new THREE.TextureLoader();
+    grassTexture = textureLoader.load('/textures/grass_texture_test.jpg');
+    grassTexture.wrapS = THREE.RepeatWrapping;
+    grassTexture.wrapT = THREE.RepeatWrapping;
+    grassTexture.repeat.set(50, 100);
+    grassTexture.colorSpace = THREE.SRGBColorSpace;
+
     const grass = new THREE.Mesh(
         new THREE.PlaneGeometry(grassWidth, pathLength),
-        new THREE.MeshPhongMaterial({ color: 0x2FA829 })
+        new THREE.MeshToonMaterial({ map: grassTexture })
     );
     grass.matrixAutoUpdate = false;
     let grass_T = new THREE.Matrix4();
@@ -104,9 +110,15 @@ function initEnvironment() {
     scene.add( grass );
     
     // Path
+    pathTexture = textureLoader.load('/textures/dirt_texture_test.jpg');
+    pathTexture.wrapS = THREE.RepeatWrapping;
+    pathTexture.wrapT = THREE.RepeatWrapping;
+    pathTexture.repeat.set(2, 200);
+    pathTexture.colorSpace = THREE.SRGBColorSpace;
+
     const path = new THREE.Mesh(
         new THREE.BoxGeometry( pathWidth, pathHeight, pathLength ),
-        new THREE.MeshPhongMaterial( {color: 0x8b4513})
+        new THREE.MeshToonMaterial({ map: pathTexture })
     );
     path.position.y = 0.1;
     scene.add( path );
@@ -116,35 +128,35 @@ function initEnvironment() {
 
     const head = new THREE.Mesh(
         new THREE.SphereGeometry(0.7, 32, 32),
-        new THREE.MeshPhongMaterial({ color: 0xffe6ce })
+        new THREE.MeshToonMaterial({ color: 0xffe6ce })
     );
     head.position.y = 1.5;
     player.add(head);
 
     const hat = new THREE.Mesh(
         new THREE.SphereGeometry(0.8, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2),
-        new THREE.MeshPhongMaterial({ color: 0xff0000 })
+        new THREE.MeshToonMaterial({ color: 0xff0000 })
     );
     hat.position.y = 1.6;
     player.add(hat);
 
     const brim = new THREE.Mesh(
         new THREE.CylinderGeometry(1.2, 1.2, 0.1, 32),
-        new THREE.MeshPhongMaterial({ color: 0xff0000 })
+        new THREE.MeshToonMaterial({ color: 0xff0000 })
     );
     brim.position.y = 1.6;
     player.add(brim);
 
     const body = new THREE.Mesh(
         new THREE.CylinderGeometry(0.4, 0.8, 1.5, 32),
-        new THREE.MeshPhongMaterial({ color: 0xff7777 })
+        new THREE.MeshToonMaterial({ color: 0xff7777 })
     );
     body.position.y = 0.2;
     player.add(body);
 
     const leftArm = new THREE.Mesh(
         new THREE.ConeGeometry(0.3, 1, 32),
-        new THREE.MeshPhongMaterial({ color: 0xff7777 })
+        new THREE.MeshToonMaterial({ color: 0xff7777 })
     );
     leftArm.position.set(-0.5, 0.6, 0);
     leftArm.rotation.z = - Math.PI / 5;
@@ -152,7 +164,7 @@ function initEnvironment() {
 
     const rightArm = new THREE.Mesh(
         new THREE.ConeGeometry(0.3, 1, 32),
-        new THREE.MeshPhongMaterial({ color: 0xff7777 })
+        new THREE.MeshToonMaterial({ color: 0xff7777 })
     );
     rightArm.position.set(0.5, 0.6, 0);
     rightArm.rotation.z = Math.PI / 5;
@@ -163,7 +175,7 @@ function initEnvironment() {
     for (let i = 0; i < 3; i++) {
         const ring = new THREE.Mesh(
             new THREE.TorusGeometry(0.15*i+0.3, 0.04, 8, 32),
-            new THREE.MeshPhongMaterial({ color: 0xb06545 })
+            new THREE.MeshToonMaterial({ color: 0xb06545 })
         );
         ring.rotation.x = Math.PI / 2;
         ring.position.y = i * 0.2;
@@ -173,7 +185,7 @@ function initEnvironment() {
     for (let i = 0; i < 5; i++) {
         const ring = new THREE.Mesh(
             new THREE.TorusGeometry(0.6 - 0.1 * Math.abs(i-2), 0.04, 8, 32, -Math.PI),
-            new THREE.MeshPhongMaterial({ color: 0xb06545 })
+            new THREE.MeshToonMaterial({ color: 0xb06545 })
         );
         ring.position.z = i * 0.2 - 0.4;
         ring.position.y = 0.45;
@@ -183,7 +195,7 @@ function initEnvironment() {
     for (let i = 0; i < 5; i++) {
         const ring = new THREE.Mesh(
             new THREE.TorusGeometry(0.6 - 0.1 * Math.abs(i-2), 0.04, 8, 32, -Math.PI),
-            new THREE.MeshPhongMaterial({ color: 0xb06545 })
+            new THREE.MeshToonMaterial({ color: 0xb06545 })
         );
         ring.rotation.y = Math.PI/2;
         ring.position.x = i * 0.2 - 0.4;
@@ -193,7 +205,7 @@ function initEnvironment() {
 
     const handle = new THREE.Mesh(
         new THREE.TorusGeometry(0.5, 0.08, 8, 32, Math.PI),
-        new THREE.MeshPhongMaterial({ color: 0xb06545 })
+        new THREE.MeshToonMaterial({ color: 0xb06545 })
     );
     handle.position.y = 0.35;
     handle.rotation.y = Math.PI / 2;
@@ -227,7 +239,7 @@ function addKeysListener() {
 }
 
 function movePlayer(delta) {
-    // Scale lateral movement speed relative to the player's forward speed (20% of currentSpeed)
+    // Scale lateral movement speed
     const activePlayerSpeed = currentSpeed * 0.2;
 
     // Left movement on A
@@ -247,14 +259,14 @@ function createTree() {
     
     const trunk = new THREE.Mesh(
         new THREE.CylinderGeometry(0.3, 0.3, 2, 32),
-        new THREE.MeshPhongMaterial({ color: 0x8b4513 })
+        new THREE.MeshToonMaterial({ color: 0x8b4513 })
     );
     trunk.position.y = 0;
     tree.add(trunk);
 
     const leaves = new THREE.Mesh(
         new THREE.ConeGeometry(1, 3, 32),
-        new THREE.MeshPhongMaterial({ color: 0x228b22 })
+        new THREE.MeshToonMaterial({ color: 0x228b22 })
     );
     leaves.position.y = 2;
     tree.add(leaves);
@@ -271,12 +283,12 @@ function spawnObstacle(x, z) {
     if (obs_type === 0) {
         // Rock
         geometry = new THREE.DodecahedronGeometry(1.5, 0);
-        material = new THREE.MeshPhongMaterial({ color: 0x808080 });
+        material = new THREE.MeshToonMaterial({ color: 0x808080 });
         obstacle = new THREE.Mesh(geometry, material);
     } else if (obs_type === 1) {
         // Log
         geometry = new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32);
-        material = new THREE.MeshPhongMaterial({ color: 0x502010 });
+        material = new THREE.MeshToonMaterial({ color: 0x502010 });
         obstacle = new THREE.Mesh(geometry, material);
         obstacle.rotation.x = Math.PI / 2;
         obstacle.rotation.z = Math.PI / 2;
@@ -426,6 +438,14 @@ function animate(timestamp) {
         distanceTraveled += currentSpeed * delta * 0.15;
         updateHUD();
 
+        // Scroll texture
+        if (grassTexture) {
+            grassTexture.offset.y += (currentSpeed * delta) / 10.0;
+        }
+        if (pathTexture) {
+            pathTexture.offset.y += (currentSpeed * delta) / 5.0;
+        }
+
         // Check Goal Reached
         if (distanceTraveled >= GOAL_DISTANCE) {
             setGameState(STATES.CLEAR);
@@ -435,21 +455,20 @@ function animate(timestamp) {
             if (distanceSinceLastSpawn >= nextSpawnDistance) {
                 const lanes = [-3, 0, 3];
                 const shuffled = [...lanes].sort(() => 0.5 - Math.random());
-                const spawnCount = Math.floor(Math.random() * 2) + 1; // 1 or 2
+                const spawnCount = Math.floor(Math.random() * 2) + 1;
                 for (let i = 0; i < spawnCount; i++) {
                     spawnObstacle(shuffled[i], spawn_dist);
                 }
-                nextSpawnDistance = 30.0 + Math.random() * 40.0; // 30m to 70m
+                nextSpawnDistance = 30.0 + Math.random() * 40.0;
                 distanceSinceLastSpawn = 0;
             }
         }
     }
 
-    // Process invincibility ticking and blinking effect
+    // Invincibile blinking effect
     if (isInvincible) {
         invincibilityTimer -= delta;
         if (player) {
-            // Blink visible status every 0.1 seconds
             player.visible = Math.floor(invincibilityTimer * 10) % 2 === 0;
         }
         if (invincibilityTimer <= 0) {
@@ -466,7 +485,7 @@ function animate(timestamp) {
 
 }
 
-// UI & Game State Management Helpers
+// UI & Game State
 function setGameState(state) {
     gameState = state;
     
@@ -615,7 +634,7 @@ function checkCollisions() {
             invincibilityTimer = INVINCIBILITY_DURATION;
             
             playerHP--;
-            currentSpeed = BASE_SPEED; // Reset speed back to BASE on collision
+            currentSpeed = BASE_SPEED;
             updateHUD();
             console.log("Collision detected! HP is now:", playerHP);
 
