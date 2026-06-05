@@ -321,7 +321,7 @@ function createApple() {
     // Fruit body
     const body = new THREE.Mesh(
         new THREE.SphereGeometry(0.2, 10, 10),
-        new THREE.MeshPhongMaterial({
+        new THREE.MeshToonMaterial({
             color: 0xff0000,
             shininess: 100
         })
@@ -332,7 +332,7 @@ function createApple() {
     // Stem
     const stem = new THREE.Mesh(
         new THREE.CylinderGeometry(0.01, 0.05, 0.3, 8),
-        new THREE.MeshPhongMaterial({color: 0x5a3d28})
+        new THREE.MeshToonMaterial({color: 0x5a3d28})
     );
     stem.position.set(0, 0.65, 0);
     stem.rotation.z = 0.2;
@@ -343,6 +343,7 @@ function createApple() {
 }
 
 function initFruit() {
+    basketFruitGroup.clear();
     const basketFloor = -0.35;
     for (let i = 0; i < MAX_HP; i++) {
         const basketApple = createApple();
@@ -351,7 +352,7 @@ function initFruit() {
         let localX = 0;
         let localY = 0;
         let localZ = 0;
-        let layerRadius;
+        let layerRadius = 0;
         let angle = 0;
 
         // First fruit layer
@@ -523,6 +524,9 @@ function resetGame() {
         player.visible = true;
     }
 
+    // Reset fruit in basket
+    initFruit();
+
     // Reset distance counters
     distanceTraveled = 0;
     distanceSinceLastSpawn = 0;
@@ -593,6 +597,16 @@ function setupUIListeners() {
         setGameState(STATES.MENU);
         resetGame();
     });
+}
+
+function animateDroppedFruits(delta) {
+    const gravity = -9.8;
+    const floorY = 0.2;
+
+    for (let i = droppedFruits.length - 1; i >= 0; i--) {
+        const fruit = droppedFruits[i];
+        fruit.vy
+    }
 }
 
 function checkCollisions() {
