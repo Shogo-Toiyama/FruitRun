@@ -57,6 +57,20 @@
 				font-weight: bold;
 				text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
 			}
+			/* HUD Display */
+			#hud {
+				position: absolute;
+				top: 20px;
+				right: 20px;
+				z-index: 10;
+				color: white;
+				font-size: 1.5rem;
+				font-weight: bold;
+				background-color: rgba(0, 0, 0, 0.5);
+				padding: 8px 16px;
+				border-radius: 4px;
+				text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+			}
 			/* Utilities */
 			.hidden {
 				display: none !important;
@@ -64,6 +78,11 @@
 		</style>
 	</head>
 	<body>
+		<!-- HUD (HP Indicator) -->
+		<div id="hud" class="hidden">
+			HP: <span id="hp-value">10</span>
+		</div>
+
 		<!-- Start Screen -->
 		<div id="menu-screen" class="ui-screen">
 			<h1>🍎 Fruit Run 🍊</h1>
@@ -80,6 +99,12 @@
 			<h1>PAUSED</h1>
 			<button id="resume-btn">Resume</button>
 			<button id="restart-btn">Start Over</button>
+		</div>
+
+		<!-- Game Over Screen -->
+		<div id="gameover-screen" class="ui-screen hidden" style="background-color: rgba(0, 0, 0, 0.5);">
+			<h1 style="color: #ff5555; text-shadow: 2px 2px 6px rgba(0,0,0,0.8);">GAME OVER</h1>
+			<button id="try-again-btn">Try Again</button>
 		</div>
 
 		<script type="module" src="/main.js"></script>

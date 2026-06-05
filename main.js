@@ -17,7 +17,7 @@ const y = 0.5;
 // Obstacle settings
 const clock = new THREE.Clock();
 const obstacles = [];
-const obstacle_speed = 20.0;
+const obstacle_speed = 40.0;
 const spawn_dist = -150; 
 let spawnTimer = 0;
 let nextSpawnTime = 1.0 + Math.random() * 2.0; 
@@ -27,7 +27,8 @@ const STATES = {
     MENU: 'MENU',
     COUNTDOWN: 'COUNTDOWN',
     PLAYING: 'PLAYING',
-    PAUSED: 'PAUSED'
+    PAUSED: 'PAUSED',
+    GAMEOVER: 'GAMEOVER'
 };
 let gameState = STATES.MENU;
 
@@ -35,6 +36,10 @@ let gameState = STATES.MENU;
 let isInvincible = false;
 let invincibilityTimer = 0;
 const INVINCIBILITY_DURATION = 1.5;
+
+// HP state
+const MAX_HP = 1;
+let playerHP = MAX_HP;
 
 let scene, camera, renderer, controls, cube, player, tree, rock, log;
 
@@ -382,17 +387,28 @@ function setGameState(state) {
     const menuScreen = document.getElementById('menu-screen');
     const countdownScreen = document.getElementById('countdown-screen');
     const pauseScreen = document.getElementById('pause-screen');
+    const gameoverScreen = document.getElementById('gameover-screen');
+    const hud = document.getElementById('hud');
 
     menuScreen.classList.add('hidden');
     countdownScreen.classList.add('hidden');
     pauseScreen.classList.add('hidden');
+    gameoverScreen.classList.add('hidden');
 
     if (state === STATES.MENU) {
         menuScreen.classList.remove('hidden');
+        hud.classList.add('hidden');
     } else if (state === STATES.COUNTDOWN) {
         countdownScreen.classList.remove('hidden');
+        hud.classList.remove('hidden');
+    } else if (state === STATES.PLAYING) {
+        hud.classList.remove('hidden');
     } else if (state === STATES.PAUSED) {
         pauseScreen.classList.remove('hidden');
+        hud.classList.remove('hidden');
+    } else if (state === STATES.GAMEOVER) {
+        gameoverScreen.classList.remove('hidden');
+        hud.classList.remove('hidden');
     }
 }
 
@@ -417,6 +433,17 @@ function resetGame() {
     // Reset invincibility
     isInvincible = false;
     invincibilityTimer = 0;
+
+    // Reset HP
+    playerHP = MAX_HP;
+    updateHUD();
+}
+
+function updateHUD() {
+    const hpValue = document.getElementById('hp-value');
+    if (hpValue) {
+        hpValue.innerText = playerHP;
+    }
 }
 
 function startCountdown() {
@@ -451,6 +478,10 @@ function setupUIListeners() {
         setGameState(STATES.MENU);
         resetGame();
     });
+    document.getElementById('try-again-btn').addEventListener('click', () => {
+        setGameState(STATES.MENU);
+        resetGame();
+    });
 }
 
 function checkCollisions() {
@@ -470,7 +501,14 @@ function checkCollisions() {
         if (dx < hitWidth && dz < hitLength) {
             isInvincible = true;
             invincibilityTimer = INVINCIBILITY_DURATION;
-            console.log("Collision detected with obstacle at X:", obs.x, "Z:", obs.z);
+            
+            playerHP--;
+            updateHUD();
+            console.log("Collision detected! HP is now:", playerHP);
+
+            if (playerHP <= 0) {
+                setGameState(STATES.GAMEOVER);
+            }
             break; 
         }
     }
