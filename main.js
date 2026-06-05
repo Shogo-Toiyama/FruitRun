@@ -343,10 +343,9 @@ function createApple() {
 }
 
 function initFruit() {
-    const basketFloor = 0.02;
+    const basketFloor = -0.35;
     for (let i = 0; i < MAX_HP; i++) {
         const basketApple = createApple();
-        // basketApple.scale.set(0.4, 0.4, 0.4);
         basketApple.matrixAutoUpdate = true;
 
         let localX = 0;
@@ -356,19 +355,19 @@ function initFruit() {
         let angle = 0;
 
         // First fruit layer
-        if (i < 5) {
-            layerRadius = 0.45;
-            angle = (i/5) * Math.PI * 2;
+        if (i < 4) {
+            layerRadius = 0.25;
+            angle = (i/4) * Math.PI * 2;
             localY = basketFloor;
         } else if (i < 9) {
-            layerRadius = 0.2;
+            layerRadius = 0.4;
             const indexInLayer = i - 5;
 
-            angle = (indexInLayer/4) * Math.PI*2 + (Math.PI /4);
-            localY = 0.2;
+            angle = (indexInLayer/5) * Math.PI*2 + (Math.PI /5);
+            localY = basketFloor + 0.35;
         } else {
             
-            localY = 0.3
+            localY = basketFloor + 0.35
         }
 
         localX = Math.cos(angle) * layerRadius;
