@@ -13,6 +13,9 @@ const pathHeight = 0.1;
 const grassWidth = 500; 
 const y = 0.5;
 
+// Fruit settings
+let basketFruitGroup;
+
 // Obstacle settings
 const clock = new THREE.Clock();
 const obstacles = [];
@@ -49,7 +52,7 @@ let currentSpeed = BASE_SPEED;
 let distanceSinceLastSpawn = 0;
 let nextSpawnDistance = 30.0 + Math.random() * 40.0;
 
-let scene, camera, renderer, controls, cube, player, tree, rock, log;
+let scene, camera, renderer, controls, player;
 
 function init() {
     // Initalize background
@@ -107,15 +110,6 @@ function initEnvironment() {
     );
     path.position.y = 0.1;
     scene.add( path );
-
-    // Cube
-    cube = new THREE.Mesh( 
-        new THREE.BoxGeometry( 1, 1, 1 ),
-        new THREE.MeshBasicMaterial( { color: 0x00ff00 } )
-    );
-    
-    cube.matrixAutoUpdate = false;
-    // scene.add( cube );
 
     // Player
     player = new THREE.Group();
@@ -208,6 +202,10 @@ function initEnvironment() {
     basket.rotation.z = Math.PI / 5;
     basket.position.set(1.5, -0.4, 0);
     player.add(basket);
+
+    basketFruitGroup = new THREE.Group();
+    basket.add(basketFruitGroup);
+    initFruit();
 
     scene.add(player);
 }
@@ -322,7 +320,7 @@ function createApple() {
 
     // Fruit body
     const body = new THREE.Mesh(
-        new THREE.SphereGeometry(0.5, 10, 10),
+        new THREE.SphereGeometry(0.2, 10, 10),
         new THREE.MeshPhongMaterial({
             color: 0xff0000,
             shininess: 100
@@ -333,10 +331,10 @@ function createApple() {
 
     // Stem
     const stem = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.05, 0.05, 0.3, 8),
+        new THREE.CylinderGeometry(0.01, 0.05, 0.3, 8),
         new THREE.MeshPhongMaterial({color: 0x5a3d28})
     );
-    stem.position.set(0, 0.92, 0);
+    stem.position.set(0, 0.65, 0);
     stem.rotation.z = 0.2;
 
     apple.add(stem);
@@ -344,25 +342,42 @@ function createApple() {
     return apple;
 }
 
-function addFruitToBasket() {
-    const basketApple = createApple();
-    basketApple.scale.set(0.4, 0.4, 0.4);
-    basketApple.matrixAutoUpdate = true;
+function initFruit() {
+    const basketFloor = 0.02;
+    for (let i = 0; i < MAX_HP; i++) {
+        const basketApple = createApple();
+        // basketApple.scale.set(0.4, 0.4, 0.4);
+        basketApple.matrixAutoUpdate = true;
 
-    const basketRadius = 0.35;
-    const randomRadius = Math.random() * basketRadius;
-    const angle = Math.random() * Math.PI * 2;
+        let localX = 0;
+        let localY = 0;
+        let localZ = 0;
+        let layerRadius;
+        let angle = 0;
 
-    const localX = Math.cos(angle) * randomRadius;
-    const localZ = Math.sin(angle) * randomRadius;
+        // First fruit layer
+        if (i < 5) {
+            layerRadius = 0.45;
+            angle = (i/5) * Math.PI * 2;
+            localY = basketFloor;
+        } else if (i < 9) {
+            layerRadius = 0.2;
+            const indexInLayer = i - 5;
 
-    const layerHeight = 0.1;
-    const currentLayer = Math.floor(currentFruitCount / 4);
-    const localY = 0.15 + (currentLayer * layerHeight);
+            angle = (indexInLayer/4) * Math.PI*2 + (Math.PI /4);
+            localY = 0.2;
+        } else {
+            
+            localY = 0.3
+        }
 
-    basketApple.position.set(localX, localY, localZ);
+        localX = Math.cos(angle) * layerRadius;
+        localZ = Math.sin(angle) * layerRadius;
 
-    basket.add(basketApple);
+        basketApple.position.set(localX, localY, localZ);
+        basketFruitGroup.add(basketApple);        
+    }
+
 }
 
 // Transformation Matrices
@@ -603,6 +618,12 @@ function checkCollisions() {
             currentSpeed = BASE_SPEED; // Reset speed back to BASE on collision
             updateHUD();
             console.log("Collision detected! HP is now:", playerHP);
+
+            if (basketFruitGroup.children.length > 0) {
+                const targetFruitIndex = basketFruitGroup.children.length - 1;
+                const fruitToDrop = basketFruitGroup.children[targetFruitIndex];
+                basketFruitGroup.remove(fruitToDrop);
+            }
 
             if (playerHP <= 0) {
                 setGameState(STATES.GAMEOVER);
