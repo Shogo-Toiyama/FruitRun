@@ -3,7 +3,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 // Initialize player 
 let playerX = 0;
-const playerSpeed = 5.0;
 const keyboard = {};
 const timer = new THREE.Timer();
 
@@ -19,8 +18,6 @@ const clock = new THREE.Clock();
 const obstacles = [];
 const obstacle_speed = 40.0;
 const spawn_dist = -150; 
-let spawnTimer = 0;
-let nextSpawnTime = 1.0 + Math.random() * 2.0; 
 
 // Game states
 const STATES = {
@@ -28,7 +25,8 @@ const STATES = {
     COUNTDOWN: 'COUNTDOWN',
     PLAYING: 'PLAYING',
     PAUSED: 'PAUSED',
-    GAMEOVER: 'GAMEOVER'
+    GAMEOVER: 'GAMEOVER',
+    CLEAR: 'CLEAR'
 };
 let gameState = STATES.MENU;
 
@@ -38,8 +36,18 @@ let invincibilityTimer = 0;
 const INVINCIBILITY_DURATION = 1.5;
 
 // HP state
-const MAX_HP = 1;
+const MAX_HP = 10;
 let playerHP = MAX_HP;
+
+// Distance & Speed settings
+const GOAL_DISTANCE = 1000;
+const BASE_SPEED = 30.0;
+const MAX_SPEED = 50.0;
+
+let distanceTraveled = 0;
+let currentSpeed = BASE_SPEED;
+let distanceSinceLastSpawn = 0;
+let nextSpawnDistance = 30.0 + Math.random() * 40.0;
 
 let scene, camera, renderer, controls, cube, player, tree, rock, log;
 
@@ -221,13 +229,16 @@ function addKeysListener() {
 }
 
 function movePlayer(delta) {
+    // Scale lateral movement speed relative to the player's forward speed (20% of currentSpeed)
+    const activePlayerSpeed = currentSpeed * 0.2;
+
     // Left movement on A
     if(keyboard["KeyA"] || keyboard["ArrowLeft"]) {
-        playerX -= playerSpeed * delta;
+        playerX -= activePlayerSpeed * delta;
     }
     // right movement on D
     if(keyboard["KeyD"] || keyboard["ArrowRight"]) {
-        playerX += playerSpeed * delta;
+        playerX += activePlayerSpeed * delta;
     }
     playerX = Math.max(-4, Math.min(4, playerX));
     player.position.set(playerX, 0.8, 0);
@@ -293,7 +304,7 @@ function moveObstacles(delta) {
     for (let i = obstacles.length - 1; i >= 0; i--) {
         const cur_obs = obstacles[i];
 
-        cur_obs.z += obstacle_speed * delta;
+        cur_obs.z += currentSpeed * delta;
 
         const T = translationMatrix(cur_obs.x, cur_obs.y, cur_obs.z);
 
@@ -345,17 +356,29 @@ function animate(timestamp) {
         moveObstacles(ani_delta);
         checkCollisions();
 
-        // Spawn obstacles at random intervals (0.8 to 2.5 seconds) with 1 or 2 obstacles
-        spawnTimer += delta;
-        if (spawnTimer >= nextSpawnTime) {
-            const lanes = [-3, 0, 3];
-            const shuffled = [...lanes].sort(() => 0.5 - Math.random());
-            const spawnCount = Math.floor(Math.random() * 2) + 1; // 1 or 2
-            for (let i = 0; i < spawnCount; i++) {
-                spawnObstacle(shuffled[i], spawn_dist);
+        // Dynamic Speed: gradually accelerate
+        currentSpeed = Math.min(MAX_SPEED, currentSpeed + 1 * delta);
+
+        // Distance tracking
+        distanceTraveled += currentSpeed * delta * 0.15;
+        updateHUD();
+
+        // Check Goal Reached
+        if (distanceTraveled >= GOAL_DISTANCE) {
+            setGameState(STATES.CLEAR);
+        } else {
+            // Distance-based spawning
+            distanceSinceLastSpawn += currentSpeed * delta;
+            if (distanceSinceLastSpawn >= nextSpawnDistance) {
+                const lanes = [-3, 0, 3];
+                const shuffled = [...lanes].sort(() => 0.5 - Math.random());
+                const spawnCount = Math.floor(Math.random() * 2) + 1; // 1 or 2
+                for (let i = 0; i < spawnCount; i++) {
+                    spawnObstacle(shuffled[i], spawn_dist);
+                }
+                nextSpawnDistance = 30.0 + Math.random() * 40.0; // 30m to 70m
+                distanceSinceLastSpawn = 0;
             }
-            nextSpawnTime = 0.8 + Math.random() * 1.7;
-            spawnTimer = 0;
         }
     }
 
@@ -388,27 +411,39 @@ function setGameState(state) {
     const countdownScreen = document.getElementById('countdown-screen');
     const pauseScreen = document.getElementById('pause-screen');
     const gameoverScreen = document.getElementById('gameover-screen');
-    const hud = document.getElementById('hud');
+    const clearScreen = document.getElementById('clear-screen');
+    const fruitsHud = document.getElementById('fruits-hud');
+    const distanceHud = document.getElementById('distance-hud');
 
     menuScreen.classList.add('hidden');
     countdownScreen.classList.add('hidden');
     pauseScreen.classList.add('hidden');
     gameoverScreen.classList.add('hidden');
+    clearScreen.classList.add('hidden');
 
     if (state === STATES.MENU) {
         menuScreen.classList.remove('hidden');
-        hud.classList.add('hidden');
+        fruitsHud.classList.add('hidden');
+        distanceHud.classList.add('hidden');
     } else if (state === STATES.COUNTDOWN) {
         countdownScreen.classList.remove('hidden');
-        hud.classList.remove('hidden');
+        fruitsHud.classList.remove('hidden');
+        distanceHud.classList.remove('hidden');
     } else if (state === STATES.PLAYING) {
-        hud.classList.remove('hidden');
+        fruitsHud.classList.remove('hidden');
+        distanceHud.classList.remove('hidden');
     } else if (state === STATES.PAUSED) {
         pauseScreen.classList.remove('hidden');
-        hud.classList.remove('hidden');
+        fruitsHud.classList.remove('hidden');
+        distanceHud.classList.remove('hidden');
     } else if (state === STATES.GAMEOVER) {
         gameoverScreen.classList.remove('hidden');
-        hud.classList.remove('hidden');
+        fruitsHud.classList.remove('hidden');
+        distanceHud.classList.remove('hidden');
+    } else if (state === STATES.CLEAR) {
+        clearScreen.classList.remove('hidden');
+        fruitsHud.classList.remove('hidden');
+        distanceHud.classList.remove('hidden');
     }
 }
 
@@ -426,9 +461,11 @@ function resetGame() {
         player.visible = true;
     }
 
-    // Reset spawning timer
-    spawnTimer = 0;
-    nextSpawnTime = 0.8 + Math.random() * 1.7;
+    // Reset distance counters
+    distanceTraveled = 0;
+    distanceSinceLastSpawn = 0;
+    nextSpawnDistance = 30.0 + Math.random() * 40.0;
+    currentSpeed = BASE_SPEED;
 
     // Reset invincibility
     isInvincible = false;
@@ -443,6 +480,14 @@ function updateHUD() {
     const hpValue = document.getElementById('hp-value');
     if (hpValue) {
         hpValue.innerText = playerHP;
+    }
+    const distanceValue = document.getElementById('distance-value');
+    if (distanceValue) {
+        distanceValue.innerText = Math.floor(distanceTraveled);
+    }
+    const speedValue = document.getElementById('speed-value');
+    if (speedValue) {
+        speedValue.innerText = Math.floor(currentSpeed);
     }
 }
 
@@ -482,6 +527,10 @@ function setupUIListeners() {
         setGameState(STATES.MENU);
         resetGame();
     });
+    document.getElementById('clear-again-btn').addEventListener('click', () => {
+        setGameState(STATES.MENU);
+        resetGame();
+    });
 }
 
 function checkCollisions() {
@@ -503,6 +552,7 @@ function checkCollisions() {
             invincibilityTimer = INVINCIBILITY_DURATION;
             
             playerHP--;
+            currentSpeed = BASE_SPEED; // Reset speed back to BASE on collision
             updateHUD();
             console.log("Collision detected! HP is now:", playerHP);
 
