@@ -15,6 +15,7 @@ const y = 0.5;
 
 // Fruit settings
 let basketFruitGroup;
+const droppedFruits = [];
 
 // Obstacle settings
 const clock = new THREE.Clock();
@@ -322,8 +323,7 @@ function createApple() {
     const body = new THREE.Mesh(
         new THREE.SphereGeometry(0.2, 10, 10),
         new THREE.MeshToonMaterial({
-            color: 0xff0000,
-            shininess: 100
+            color: 0xff0000
         })
     );
     body.position.y = 0.5;
@@ -417,6 +417,8 @@ function animate(timestamp) {
     if (gameState === STATES.PLAYING) {
         movePlayer(delta);
         moveObstacles(ani_delta);
+
+        animateDroppedFruits(ani_delta);
         checkCollisions();
 
         // Dynamic Speed: gradually accelerate
@@ -605,7 +607,21 @@ function animateDroppedFruits(delta) {
 
     for (let i = droppedFruits.length - 1; i >= 0; i--) {
         const fruit = droppedFruits[i];
-        fruit.vy
+        fruit.vy += gravity * delta;
+        fruit.x += fruit.vx * delta;
+        fruit.y += fruit.vy * delta;
+        fruit.z += fruit.vz * delta;
+
+        if (fruit.y < floorY) {
+            fruit.y = floorY;
+            fruit.vy = -fruit.vy * 0.5;
+            fruit.vx *= 0.7;
+            fruit.vz *= 0.7;
+        }
+
+        fruit.mesh.matrix.copy(translationMatrix(fruit.x, fruit.y, fruit.z));
+
+        
     }
 }
 
@@ -635,7 +651,26 @@ function checkCollisions() {
             if (basketFruitGroup.children.length > 0) {
                 const targetFruitIndex = basketFruitGroup.children.length - 1;
                 const fruitToDrop = basketFruitGroup.children[targetFruitIndex];
+                player.updateMatrixWorld(true);
+                const worldPosition = new THREE.Vector3();
+                fruitToDrop.getWorldPosition(worldPosition);
+
                 basketFruitGroup.remove(fruitToDrop);
+
+                const looseFruit = createApple();
+                looseFruit.matrixAutoUpdate = false;
+                looseFruit.matrix.copy(translationMatrix(worldPosition.x, worldPosition.y, worldPosition.z));
+                scene.add(looseFruit);
+
+                droppedFruits.push({
+                    mesh: looseFruit,
+                    x: worldPosition.x,
+                    y: worldPosition.y,
+                    z: worldPosition.z,
+                    vx: 5,
+                    vy: 6 + (Math.random() * 4),
+                    vz: 0.5 + -1*(-1 - Math.random() * 3)
+                });
             }
 
             if (playerHP <= 0) {
