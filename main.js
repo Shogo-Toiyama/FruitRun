@@ -31,6 +31,11 @@ const STATES = {
 };
 let gameState = STATES.MENU;
 
+// Invincibility state
+let isInvincible = false;
+let invincibilityTimer = 0;
+const INVINCIBILITY_DURATION = 1.5;
+
 let scene, camera, renderer, controls, cube, player, tree, rock, log;
 
 function init() {
@@ -333,6 +338,7 @@ function animate(timestamp) {
     if (gameState === STATES.PLAYING) {
         movePlayer(delta);
         moveObstacles(ani_delta);
+        checkCollisions();
 
         // Spawn obstacles at random intervals (0.8 to 2.5 seconds) with 1 or 2 obstacles
         spawnTimer += delta;
@@ -345,6 +351,21 @@ function animate(timestamp) {
             }
             nextSpawnTime = 0.8 + Math.random() * 1.7;
             spawnTimer = 0;
+        }
+    }
+
+    // Process invincibility ticking and blinking effect
+    if (isInvincible) {
+        invincibilityTimer -= delta;
+        if (player) {
+            // Blink visible status every 0.1 seconds
+            player.visible = Math.floor(invincibilityTimer * 10) % 2 === 0;
+        }
+        if (invincibilityTimer <= 0) {
+            isInvincible = false;
+            if (player) {
+                player.visible = true;
+            }
         }
     }
 
@@ -386,11 +407,16 @@ function resetGame() {
     playerX = 0;
     if (player) {
         player.position.set(0, 0.8, 0);
+        player.visible = true;
     }
 
     // Reset spawning timer
     spawnTimer = 0;
     nextSpawnTime = 0.8 + Math.random() * 1.7;
+
+    // Reset invincibility
+    isInvincible = false;
+    invincibilityTimer = 0;
 }
 
 function startCountdown() {
@@ -425,6 +451,29 @@ function setupUIListeners() {
         setGameState(STATES.MENU);
         resetGame();
     });
+}
+
+function checkCollisions() {
+    if (isInvincible) return;
+
+    // Collision box dimensions
+    const hitWidth = 1.2;
+    const hitLength = 1.2;
+
+    for (let i = 0; i < obstacles.length; i++) {
+        const obs = obstacles[i];
+
+        // Player is at z = 0, x = playerX
+        const dx = Math.abs(playerX - obs.x);
+        const dz = Math.abs(0 - obs.z);
+
+        if (dx < hitWidth && dz < hitLength) {
+            isInvincible = true;
+            invincibilityTimer = INVINCIBILITY_DURATION;
+            console.log("Collision detected with obstacle at X:", obs.x, "Z:", obs.z);
+            break; 
+        }
+    }
 }
 
 init();
