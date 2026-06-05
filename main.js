@@ -43,20 +43,21 @@ const MAX_HP = 10;
 let playerHP = MAX_HP;
 
 // Distance & Speed settings
-const GOAL_DISTANCE = 1000;
-const BASE_SPEED = 30.0;
-const MAX_SPEED = 50.0;
+const GOAL_DISTANCE = 150;
+const BASE_SPEED = 50.0;
+const MAX_SPEED = 80.0;
 
 let distanceTraveled = 0;
 let currentSpeed = BASE_SPEED;
 let distanceSinceLastSpawn = 0;
 let nextSpawnDistance = 30.0 + Math.random() * 40.0;
 
-let scene, camera, renderer, controls, player, grassTexture, pathTexture;;
+let scene, camera, renderer, controls, player, grassTexture, pathTexture, goalHouseMesh = null;
 
 function init() {
     // Initalize background
     scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0xb8f1ff, 50, 160);
 
     camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
     camera.position.z = 6;
@@ -274,6 +275,34 @@ function createTree() {
     return tree;
 }
 
+function createHouse() {
+    const house = new THREE.Group();
+
+    // Wall
+    const bodyGeom = new THREE.BoxGeometry(10, 5, 8);
+    const bodyMat = new THREE.MeshToonMaterial({ color: 0xfffdd0 });
+    const body = new THREE.Mesh(bodyGeom, bodyMat);
+    body.position.y = 1.5; 
+    house.add(body);
+
+    // Roof
+    const roofGeom = new THREE.ConeGeometry(8, 5, 4);
+    const roofMat = new THREE.MeshToonMaterial({ color: 0xcd5c5c });
+    const roof = new THREE.Mesh(roofGeom, roofMat);
+    roof.rotation.y = Math.PI / 4;
+    roof.position.y = 6;
+    house.add(roof);
+
+    // Chimney
+    const chimneyGeom = new THREE.BoxGeometry(1.2, 3.0, 1.2);
+    const chimneyMat = new THREE.MeshToonMaterial({ color: 0x8b4513 });
+    const chimney = new THREE.Mesh(chimneyGeom, chimneyMat);
+    chimney.position.set(3, 6.5, 0);
+    house.add(chimney);
+
+    return house;
+}
+
 function spawnObstacle(x, z) {
     const obs_type = Math.floor(Math.random() * 3);
     let obstacle;
@@ -288,8 +317,9 @@ function spawnObstacle(x, z) {
     } else if (obs_type === 1) {
         // Log
         geometry = new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32);
-        material = new THREE.MeshToonMaterial({ color: 0x502010 });
-        obstacle = new THREE.Mesh(geometry, material);
+        const barkMaterial = new THREE.MeshToonMaterial({ color: 0x502010 });
+        const woodMaterial = new THREE.MeshToonMaterial({ color: 0xffc196 });
+        obstacle = new THREE.Mesh(geometry, [barkMaterial, woodMaterial, woodMaterial]);
         obstacle.rotation.x = Math.PI / 2;
         obstacle.rotation.z = Math.PI / 2;
     } else {
@@ -450,9 +480,21 @@ function animate(timestamp) {
         if (distanceTraveled >= GOAL_DISTANCE) {
             setGameState(STATES.CLEAR);
         } else {
-            // Distance-based spawning
+            // Move goal house if spawned
+            if (goalHouseMesh) {
+                goalHouseMesh.position.z += currentSpeed * delta;
+            }
+
+            // Spawn the goal house
+            if (!goalHouseMesh && distanceTraveled >= GOAL_DISTANCE - 20) {
+                goalHouseMesh = createHouse();
+                goalHouseMesh.position.set(0, 0.5, spawn_dist);
+                scene.add(goalHouseMesh);
+            }
+
+            // Distance-based spawning of obstacles (stops at 977.5m so the last one reaches the player at 1000m)
             distanceSinceLastSpawn += currentSpeed * delta;
-            if (distanceSinceLastSpawn >= nextSpawnDistance) {
+            if (distanceSinceLastSpawn >= nextSpawnDistance && distanceTraveled < (GOAL_DISTANCE - 25)) {
                 const lanes = [-3, 0, 3];
                 const shuffled = [...lanes].sort(() => 0.5 - Math.random());
                 const spawnCount = Math.floor(Math.random() * 2) + 1;
@@ -535,6 +577,12 @@ function resetGame() {
         scene.remove(obstacles[i].mesh);
     }
     obstacles.length = 0;
+
+    // Reset goal house
+    if (goalHouseMesh) {
+        scene.remove(goalHouseMesh);
+        goalHouseMesh = null;
+    }
 
     // Reset player position
     playerX = 0;
