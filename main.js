@@ -20,7 +20,6 @@ const droppedFruits = [];
 // Obstacle settings
 const clock = new THREE.Clock();
 const obstacles = [];
-const obstacle_speed = 40.0;
 const spawn_dist = -150; 
 
 // Game states
@@ -44,8 +43,8 @@ const MAX_HP = 10;
 let playerHP = MAX_HP;
 
 // Distance & Speed settings
-const GOAL_DISTANCE = 150;
-const BASE_SPEED = 50.0;
+const GOAL_DISTANCE = 500;
+const BASE_SPEED = 30.0;
 const MAX_SPEED = 80.0;
 
 let distanceTraveled = 0;
@@ -54,6 +53,7 @@ let distanceSinceLastSpawn = 0;
 let nextSpawnDistance = 30.0 + Math.random() * 40.0;
 
 let scene, camera, renderer, controls, player, grassTexture, pathTexture, goalHouseMesh = null;
+let runTime = 0;
 
 function init() {
     // Initalize background
@@ -253,7 +253,7 @@ function movePlayer(delta) {
         playerX += activePlayerSpeed * delta;
     }
     playerX = Math.max(-4, Math.min(4, playerX));
-    player.position.set(playerX, 0.8, 0);
+    player.position.x = playerX;
 }
 
 function createTree() {
@@ -456,19 +456,11 @@ function animate(timestamp) {
     const delta = timer.getDelta();
     const ani_delta = clock.getDelta();
     
-    if (gameState === STATES.PLAYING) {
-        movePlayer(delta);
-        moveObstacles(ani_delta);
-
-        animateDroppedFruits(ani_delta);
-        checkCollisions();
-
-        // Dynamic Speed: gradually accelerate
-        currentSpeed = Math.min(MAX_SPEED, currentSpeed + 1 * delta);
-
-        // Distance tracking
-        distanceTraveled += currentSpeed * delta * 0.15;
-        updateHUD();
+    if (gameState === STATES.PLAYING || gameState === STATES.COUNTDOWN) {
+        runTime += delta * 10.0;
+        const bob = Math.abs(Math.sin(runTime)) * 0.12;
+        player.position.y = 0.8 + bob;
+        player.rotation.x = 0.15 + Math.sin(runTime * 2.0) * 0.05;
 
         // Scroll texture
         if (grassTexture) {
@@ -478,25 +470,13 @@ function animate(timestamp) {
             pathTexture.offset.y += (currentSpeed * delta) / 5.0;
         }
 
-        // Check Goal Reached
-        if (distanceTraveled >= GOAL_DISTANCE) {
-            setGameState(STATES.CLEAR);
-        } else {
-            // Move goal house if spawned
-            if (goalHouseMesh) {
-                goalHouseMesh.position.z += currentSpeed * delta;
-            }
+        // Move obstacles
+        moveObstacles(ani_delta);
 
-            // Spawn the goal house
-            if (!goalHouseMesh && distanceTraveled >= GOAL_DISTANCE - 20) {
-                goalHouseMesh = createHouse();
-                goalHouseMesh.position.set(0, 0.5, spawn_dist);
-                scene.add(goalHouseMesh);
-            }
-
-            // Distance-based spawning of obstacles (stops at 977.5m so the last one reaches the player at 1000m)
+        // Spawn obstacles (during countdown, or during playing if not near the goal)
+        if (gameState === STATES.COUNTDOWN || distanceTraveled < (GOAL_DISTANCE - 25)) {
             distanceSinceLastSpawn += currentSpeed * delta;
-            if (distanceSinceLastSpawn >= nextSpawnDistance && distanceTraveled < (GOAL_DISTANCE - 25)) {
+            if (distanceSinceLastSpawn >= nextSpawnDistance) {
                 const lanes = [-3, 0, 3];
                 const shuffled = [...lanes].sort(() => 0.5 - Math.random());
                 const spawnCount = Math.floor(Math.random() * 2) + 1;
@@ -505,6 +485,36 @@ function animate(timestamp) {
                 }
                 nextSpawnDistance = 30.0 + Math.random() * 40.0;
                 distanceSinceLastSpawn = 0;
+            }
+        }
+
+        if (gameState === STATES.PLAYING) {
+            movePlayer(delta);
+            animateDroppedFruits(ani_delta);
+            checkCollisions();
+
+            // Dynamic Speed: gradually accelerate
+            currentSpeed = Math.min(MAX_SPEED, currentSpeed + 1 * delta);
+
+            // Distance tracking
+            distanceTraveled += currentSpeed * delta * 0.15;
+            updateHUD();
+
+            // Check Goal Reached
+            if (distanceTraveled >= GOAL_DISTANCE) {
+                setGameState(STATES.CLEAR);
+            } else {
+                // Move goal house if spawned
+                if (goalHouseMesh) {
+                    goalHouseMesh.position.z += currentSpeed * delta;
+                }
+
+                // Spawn the goal house
+                if (!goalHouseMesh && distanceTraveled >= GOAL_DISTANCE - 20) {
+                    goalHouseMesh = createHouse();
+                    goalHouseMesh.position.set(0, 0.5, spawn_dist);
+                    scene.add(goalHouseMesh);
+                }
             }
         }
     }
@@ -590,8 +600,10 @@ function resetGame() {
     playerX = 0;
     if (player) {
         player.position.set(0, 0.8, 0);
+        player.rotation.set(0, 0, 0);
         player.visible = true;
     }
+    runTime = 0;
 
     // Reset fruit in basket
     initFruit();
@@ -623,6 +635,10 @@ function updateHUD() {
     const speedValue = document.getElementById('speed-value');
     if (speedValue) {
         speedValue.innerText = Math.floor(currentSpeed);
+    }
+    const goalValue = document.getElementById('goal-value');
+    if (goalValue) {
+        goalValue.innerText = GOAL_DISTANCE;
     }
 }
 
