@@ -22,6 +22,15 @@ const spawn_dist = -150;
 let spawnTimer = 0;
 let nextSpawnTime = 1.0 + Math.random() * 2.0; 
 
+// Game states
+const STATES = {
+    MENU: 'MENU',
+    COUNTDOWN: 'COUNTDOWN',
+    PLAYING: 'PLAYING',
+    PAUSED: 'PAUSED'
+};
+let gameState = STATES.MENU;
+
 let scene, camera, renderer, controls, cube, player, tree, rock, log;
 
 function init() {
@@ -45,6 +54,7 @@ function init() {
     initLighting();
     initEnvironment();
     addKeysListener();
+    setupUIListeners();
     renderer.setAnimationLoop( animate );
 
 }
@@ -187,12 +197,18 @@ function initEnvironment() {
 function addKeysListener() {
     window.addEventListener('keydown', (event) => {
         keyboard[event.code] = true;
+        if (event.code === 'Escape') {
+            if (gameState === STATES.PLAYING) {
+                setGameState(STATES.PAUSED);
+            } else if (gameState === STATES.PAUSED) {
+                setGameState(STATES.PLAYING);
+            }
+        }
     });
     window.addEventListener('keyup', (event) => {
         keyboard[event.code] = false;
     });
 }
-addKeysListener();
 
 function movePlayer(delta) {
     // Left movement on A
@@ -313,27 +329,102 @@ function animate(timestamp) {
     timer.update(timestamp);
     const delta = timer.getDelta();
     const ani_delta = clock.getDelta();
-    movePlayer(delta);
-    // followPlayer();
-    moveObstacles(ani_delta);
+    
+    if (gameState === STATES.PLAYING) {
+        movePlayer(delta);
+        moveObstacles(ani_delta);
 
-    // Spawn obstacles at random intervals (1 to 3 seconds) with 1 or 2 obstacles
-    spawnTimer += delta;
-    if (spawnTimer >= nextSpawnTime) {
-        const lanes = [-3, 0, 3];
-        const shuffled = [...lanes].sort(() => 0.5 - Math.random());
-        const spawnCount = Math.floor(Math.random() * 2) + 1; // 1 or 2
-        for (let i = 0; i < spawnCount; i++) {
-            spawnObstacle(shuffled[i], spawn_dist);
+        // Spawn obstacles at random intervals (0.8 to 2.5 seconds) with 1 or 2 obstacles
+        spawnTimer += delta;
+        if (spawnTimer >= nextSpawnTime) {
+            const lanes = [-3, 0, 3];
+            const shuffled = [...lanes].sort(() => 0.5 - Math.random());
+            const spawnCount = Math.floor(Math.random() * 2) + 1; // 1 or 2
+            for (let i = 0; i < spawnCount; i++) {
+                spawnObstacle(shuffled[i], spawn_dist);
+            }
+            nextSpawnTime = 0.8 + Math.random() * 1.7;
+            spawnTimer = 0;
         }
-        nextSpawnTime = 0.8 + Math.random() * 1.7;
-        spawnTimer = 0;
     }
 
 	renderer.render( scene, camera );
 
     controls.update();
 
+}
+
+// UI & Game State Management Helpers
+function setGameState(state) {
+    gameState = state;
+    
+    const menuScreen = document.getElementById('menu-screen');
+    const countdownScreen = document.getElementById('countdown-screen');
+    const pauseScreen = document.getElementById('pause-screen');
+
+    menuScreen.classList.add('hidden');
+    countdownScreen.classList.add('hidden');
+    pauseScreen.classList.add('hidden');
+
+    if (state === STATES.MENU) {
+        menuScreen.classList.remove('hidden');
+    } else if (state === STATES.COUNTDOWN) {
+        countdownScreen.classList.remove('hidden');
+    } else if (state === STATES.PAUSED) {
+        pauseScreen.classList.remove('hidden');
+    }
+}
+
+function resetGame() {
+    // Clear all existing obstacles from scene
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        scene.remove(obstacles[i].mesh);
+    }
+    obstacles.length = 0;
+
+    // Reset player position
+    playerX = 0;
+    if (player) {
+        player.position.set(0, 0.8, 0);
+    }
+
+    // Reset spawning timer
+    spawnTimer = 0;
+    nextSpawnTime = 0.8 + Math.random() * 1.7;
+}
+
+function startCountdown() {
+    setGameState(STATES.COUNTDOWN);
+    resetGame();
+
+    const countdownText = document.getElementById('countdown-text');
+    let count = 3;
+    countdownText.innerText = count;
+
+    const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            countdownText.innerText = count;
+        } else if (count === 0) {
+            countdownText.innerText = 'GO!';
+        } else {
+            clearInterval(interval);
+            setGameState(STATES.PLAYING);
+        }
+    }, 1000);
+}
+
+function setupUIListeners() {
+    document.getElementById('start-btn').addEventListener('click', () => {
+        startCountdown();
+    });
+    document.getElementById('resume-btn').addEventListener('click', () => {
+        setGameState(STATES.PLAYING);
+    });
+    document.getElementById('restart-btn').addEventListener('click', () => {
+        setGameState(STATES.MENU);
+        resetGame();
+    });
 }
 
 init();
