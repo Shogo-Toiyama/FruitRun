@@ -612,15 +612,13 @@ function animateDroppedFruits(delta) {
         fruit.y += fruit.vy * delta;
         fruit.z += fruit.vz * delta;
 
-        if (fruit.y < floorY) {
-            fruit.y = floorY;
-            fruit.vy = -fruit.vy * 0.5;
-            fruit.vx *= 0.7;
-            fruit.vz *= 0.7;
-        }
-
         fruit.mesh.matrix.copy(translationMatrix(fruit.x, fruit.y, fruit.z));
+        const hitGround = fruit.vy < 0 && fruit.y <= floorY;
 
+        if (hitGround) {
+            scene.remove(fruit.mesh);
+            droppedFruits.splice(i, 1);
+        }
         
     }
 }
@@ -667,9 +665,12 @@ function checkCollisions() {
                     x: worldPosition.x,
                     y: worldPosition.y,
                     z: worldPosition.z,
-                    vx: 5,
-                    vy: 6 + (Math.random() * 4),
-                    vz: 0.5 + -1*(-1 - Math.random() * 3)
+                    vx: 4,
+                    vy: 4,
+                    vz: 2
+                    // vx: 5,
+                    // vy: 6 + (Math.random() * 4),
+                    // vz: 0.5 + -1*(-1 - Math.random() * 3)
                 });
             }
 
