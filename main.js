@@ -18,7 +18,9 @@ const y = 0.5;
 const clock = new THREE.Clock();
 const obstacles = [];
 const obstacle_speed = 20.0;
-const spawn_dist = -200; 
+const spawn_dist = -150; 
+let spawnTimer = 0;
+let nextSpawnTime = 1.0 + Math.random() * 2.0; 
 
 let scene, camera, renderer, controls, cube, player, tree, rock, log;
 
@@ -180,50 +182,6 @@ function initEnvironment() {
     player.add(basket);
 
     scene.add(player);
-
-
-    // // Obstaclesd
-    // // 1. Tree
-    // const tree = new THREE.Group();
-    
-    // const trunk = new THREE.Mesh(
-    //     new THREE.CylinderGeometry(0.3, 0.3, 2, 32),
-    //     new THREE.MeshPhongMaterial({ color: 0x8b4513 })
-    // );
-    // trunk.position.y = 0;
-    // tree.add(trunk);
-
-    // const leaves = new THREE.Mesh(
-    //     new THREE.ConeGeometry(1, 3, 32),
-    //     new THREE.MeshPhongMaterial({ color: 0x228b22 })
-    // );
-    // leaves.position.y = 2;
-    // tree.add(leaves);
-
-    // tree.position.set(2, 1, -10);
-    // scene.add(tree);
-
-    // // 2. Rock
-    // const rock = new THREE.Mesh(
-    //     new THREE.DodecahedronGeometry(1.5, 0),
-    //     new THREE.MeshPhongMaterial({ color: 0x808080 })
-    // );
-    // rock.position.set(-2, 0.5, -20);
-    // scene.add(rock);
-
-    // // 3. Log
-    // const log = new THREE.Mesh(
-    //     new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32),
-    //     new THREE.MeshPhongMaterial({ color: 0x502010 })
-    // );
-    // log.position.set(0, 0.5, -5);
-    // log.rotation.x = Math.PI / 2;
-    // log.rotation.z = Math.PI / 2;
-    // scene.add(log);
-    
-    spawnObstacle(-2, -20);
-    spawnObstacle(2, -40);
-    spawnObstacle(0, -5);
 }
 
 function addKeysListener() {
@@ -318,9 +276,6 @@ function moveObstacles(delta) {
         if (cur_obs.z > 10) {
             scene.remove(cur_obs.mesh);
             obstacles.splice(i, 1);
-
-            const randomLane = (Math.floor(Math.random() * 3) - 1) * 1.5;
-            spawnObstacle(randomLane, spawn_dist);
         }
     }
 }
@@ -361,6 +316,19 @@ function animate(timestamp) {
     movePlayer(delta);
     // followPlayer();
     moveObstacles(ani_delta);
+
+    // Spawn obstacles at random intervals (1 to 3 seconds) with 1 or 2 obstacles
+    spawnTimer += delta;
+    if (spawnTimer >= nextSpawnTime) {
+        const lanes = [-3, 0, 3];
+        const shuffled = [...lanes].sort(() => 0.5 - Math.random());
+        const spawnCount = Math.floor(Math.random() * 2) + 1; // 1 or 2
+        for (let i = 0; i < spawnCount; i++) {
+            spawnObstacle(shuffled[i], spawn_dist);
+        }
+        nextSpawnTime = 0.8 + Math.random() * 1.7;
+        spawnTimer = 0;
+    }
 
 	renderer.render( scene, camera );
 
