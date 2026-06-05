@@ -12,6 +12,7 @@ const pathLength = 1000;
 const pathWidth = 10;
 const pathHeight = 0.1;
 const grassWidth = 500; 
+const y = 0.5;
 
 // Obstacle settings
 const clock = new THREE.Clock();
@@ -181,44 +182,44 @@ function initEnvironment() {
     scene.add(player);
 
 
-    // Obstacles
-    // 1. Tree
-    const tree = new THREE.Group();
+    // // Obstaclesd
+    // // 1. Tree
+    // const tree = new THREE.Group();
     
-    const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.3, 0.3, 2, 32),
-        new THREE.MeshPhongMaterial({ color: 0x8b4513 })
-    );
-    trunk.position.y = 0;
-    tree.add(trunk);
+    // const trunk = new THREE.Mesh(
+    //     new THREE.CylinderGeometry(0.3, 0.3, 2, 32),
+    //     new THREE.MeshPhongMaterial({ color: 0x8b4513 })
+    // );
+    // trunk.position.y = 0;
+    // tree.add(trunk);
 
-    const leaves = new THREE.Mesh(
-        new THREE.ConeGeometry(1, 3, 32),
-        new THREE.MeshPhongMaterial({ color: 0x228b22 })
-    );
-    leaves.position.y = 2;
-    tree.add(leaves);
+    // const leaves = new THREE.Mesh(
+    //     new THREE.ConeGeometry(1, 3, 32),
+    //     new THREE.MeshPhongMaterial({ color: 0x228b22 })
+    // );
+    // leaves.position.y = 2;
+    // tree.add(leaves);
 
-    tree.position.set(2, 1, -10);
-    scene.add(tree);
+    // tree.position.set(2, 1, -10);
+    // scene.add(tree);
 
-    // 2. Rock
-    const rock = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(1.5, 0),
-        new THREE.MeshPhongMaterial({ color: 0x808080 })
-    );
-    rock.position.set(-2, 0.5, -20);
-    scene.add(rock);
+    // // 2. Rock
+    // const rock = new THREE.Mesh(
+    //     new THREE.DodecahedronGeometry(1.5, 0),
+    //     new THREE.MeshPhongMaterial({ color: 0x808080 })
+    // );
+    // rock.position.set(-2, 0.5, -20);
+    // scene.add(rock);
 
-    // 3. Log
-    const log = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32),
-        new THREE.MeshPhongMaterial({ color: 0x502010 })
-    );
-    log.position.set(0, 0.5, -5);
-    log.rotation.x = Math.PI / 2;
-    log.rotation.z = Math.PI / 2;
-    scene.add(log);
+    // // 3. Log
+    // const log = new THREE.Mesh(
+    //     new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32),
+    //     new THREE.MeshPhongMaterial({ color: 0x502010 })
+    // );
+    // log.position.set(0, 0.5, -5);
+    // log.rotation.x = Math.PI / 2;
+    // log.rotation.z = Math.PI / 2;
+    // scene.add(log);
     
     spawnObstacle(-2, -20);
     spawnObstacle(2, -40);
@@ -270,7 +271,6 @@ function createTree() {
 
 function spawnObstacle(x, z) {
     const obs_type = Math.floor(Math.random() * 3);
-    let y = 0.5;
     let obstacle;
     let geometry;
     let material;
@@ -293,6 +293,8 @@ function spawnObstacle(x, z) {
     }
 
     obstacle.matrixAutoUpdate = false;
+    const initialT = translationMatrix(x, y, z);
+    obstacle.matrix.copy(initialT);
     scene.add(obstacle);
 
     obstacles.push({
