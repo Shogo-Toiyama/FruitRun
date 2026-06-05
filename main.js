@@ -101,9 +101,19 @@ function initEnvironment() {
     grassTexture.repeat.set(50, 100);
     grassTexture.colorSpace = THREE.SRGBColorSpace;
 
+    const grassBump = textureLoader.load('/textures/grass_texture_test_ambient.png');
+    grassBump.wrapS = THREE.RepeatWrapping;
+    grassBump.wrapT = THREE.RepeatWrapping;
+    grassBump.repeat.set(50, 100);
+    grassBump.offset = grassTexture.offset; // Share offset vector to sync scrolling
+
     const grass = new THREE.Mesh(
         new THREE.PlaneGeometry(grassWidth, pathLength),
-        new THREE.MeshToonMaterial({ map: grassTexture })
+        new THREE.MeshToonMaterial({ 
+            map: grassTexture,
+            bumpMap: grassBump,
+            bumpScale: 1
+        })
     );
     grass.matrixAutoUpdate = false;
     let grass_T = new THREE.Matrix4();
@@ -118,9 +128,19 @@ function initEnvironment() {
     pathTexture.repeat.set(2, 200);
     pathTexture.colorSpace = THREE.SRGBColorSpace;
 
+    const pathBump = textureLoader.load('/textures/dirt_texture_test_ambient.png');
+    pathBump.wrapS = THREE.RepeatWrapping;
+    pathBump.wrapT = THREE.RepeatWrapping;
+    pathBump.repeat.set(2, 200);
+    pathBump.offset = pathTexture.offset; // Share offset vector to sync scrolling
+
     const path = new THREE.Mesh(
         new THREE.BoxGeometry( pathWidth, pathHeight, pathLength ),
-        new THREE.MeshToonMaterial({ map: pathTexture })
+        new THREE.MeshToonMaterial({ 
+            map: pathTexture,
+            bumpMap: pathBump,
+            bumpScale: 0.15
+        })
     );
     path.position.y = 0.1;
     scene.add( path );
