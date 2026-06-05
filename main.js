@@ -325,6 +325,54 @@ function moveObstacles(delta) {
     }
 }
 
+function createApple() {
+    const apple = new THREE.Group();
+
+    // Fruit body
+    const body = new THREE.Mesh(
+        new THREE.SphereGeometry(0.5, 10, 10),
+        new THREE.MeshPhongMaterial({
+            color: 0xff0000,
+            shininess: 100
+        })
+    );
+    body.position.y = 0.5;
+    apple.add(body);
+
+    // Stem
+    const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 0.3, 8),
+        new THREE.MeshPhongMaterial({color: 0x5a3d28})
+    );
+    stem.position.set(0, 0.92, 0);
+    stem.rotation.z = 0.2;
+
+    apple.add(stem);
+
+    return apple;
+}
+
+function addFruitToBasket() {
+    const basketApple = createApple();
+    basketApple.scale.set(0.4, 0.4, 0.4);
+    basketApple.matrixAutoUpdate = true;
+
+    const basketRadius = 0.35;
+    const randomRadius = Math.random() * basketRadius;
+    const angle = Math.random() * Math.PI * 2;
+
+    const localX = Math.cos(angle) * randomRadius;
+    const localZ = Math.sin(angle) * randomRadius;
+
+    const layerHeight = 0.1;
+    const currentLayer = Math.floor(currentFruitCount / 4);
+    const localY = 0.15 + (currentLayer * layerHeight);
+
+    basketApple.position.set(localX, localY, localZ);
+
+    basket.add(basketApple);
+}
+
 // Transformation Matrices
 function translationMatrix(tx, ty, tz) {
 	return new THREE.Matrix4().set(
