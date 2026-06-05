@@ -4,10 +4,125 @@
 		<meta charset="utf-8">
 		<title>Fruit Run</title>
 		<style>
-			body { margin: 0; }
+			body { 
+				margin: 0; 
+				overflow: hidden;
+				font-family: sans-serif;
+				user-select: none;
+			}
+			canvas {
+				display: block;
+			}
+			/* UI Screen Overlay Base */
+			.ui-screen {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				z-index: 10;
+				color: white;
+				background-color: rgba(0, 0, 0, 0.4);
+			}
+			/* Typography & Buttons */
+			h1 {
+				font-size: 3rem;
+				margin-bottom: 2rem;
+				text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+			}
+			button {
+				padding: 10px 24px;
+				font-size: 1.2rem;
+				background-color: #ff7777;
+				color: white;
+				border: none;
+				border-radius: 4px;
+				cursor: pointer;
+				margin: 10px;
+				box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+			}
+			button:hover {
+				background-color: #ff5555;
+			}
+			button:active {
+				transform: translateY(0);
+			}
+			/* Countdown display */
+			#countdown-text {
+				font-size: 6rem;
+				font-weight: bold;
+				text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+			}
+			/* HUD Display Panels */
+			.hud-panel {
+				position: absolute;
+				top: 20px;
+				z-index: 10;
+				color: white;
+				font-size: 1.5rem;
+				font-weight: bold;
+				background-color: rgba(0, 0, 0, 0.5);
+				padding: 8px 16px;
+				border-radius: 4px;
+				text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+			}
+			#fruits-hud {
+				right: 20px;
+			}
+			#distance-hud {
+				left: 20px;
+			}
+			/* Utilities */
+			.hidden {
+				display: none !important;
+			}
 		</style>
 	</head>
 	<body>
+		<!-- HUD (Fruits Counter) -->
+		<div id="fruits-hud" class="hud-panel hidden">
+			Fruits: <span id="hp-value">10</span>
+		</div>
+
+		<!-- HUD (Distance Tracker) -->
+		<div id="distance-hud" class="hud-panel hidden">
+			Distance: <span id="distance-value">0</span>m / 1000m (Speed: <span id="speed-value">30</span>)
+		</div>
+
+		<!-- Start Screen -->
+		<div id="menu-screen" class="ui-screen">
+			<h1>🍎 Fruit Run 🍊</h1>
+			<button id="start-btn">Start Game</button>
+		</div>
+
+		<!-- Countdown Screen -->
+		<div id="countdown-screen" class="ui-screen hidden" style="background-color: transparent;">
+			<div id="countdown-text">3</div>
+		</div>
+
+		<!-- Pause Screen -->
+		<div id="pause-screen" class="ui-screen hidden" style="background-color: rgba(0, 0, 0, 0.6);">
+			<h1>PAUSED</h1>
+			<button id="resume-btn">Resume</button>
+			<button id="restart-btn">Start Over</button>
+		</div>
+
+		<!-- Game Over Screen -->
+		<div id="gameover-screen" class="ui-screen hidden" style="background-color: rgba(0, 0, 0, 0.5);">
+			<h1 style="color: #ff5555; text-shadow: 2px 2px 6px rgba(0,0,0,0.8);">GAME OVER</h1>
+			<button id="try-again-btn">Try Again</button>
+		</div>
+
+		<!-- Game Clear Screen -->
+		<div id="clear-screen" class="ui-screen hidden" style="background-color: rgba(0, 50, 0, 0.6);">
+			<h1 style="color: #55ff55; text-shadow: 2px 2px 6px rgba(0,0,0,0.8);">GOAL REACHED!</h1>
+			<button id="clear-again-btn">Play Again</button>
+		</div>
+
 		<script type="module" src="/main.js"></script>
 	</body>
 </html>

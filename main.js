@@ -3,7 +3,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 // Initialize player 
 let playerX = 0;
-const playerSpeed = 5.0;
 const keyboard = {};
 const timer = new THREE.Timer();
 
@@ -17,8 +16,38 @@ const y = 0.5;
 // Obstacle settings
 const clock = new THREE.Clock();
 const obstacles = [];
-const obstacle_speed = 20.0;
-const spawn_dist = -200; 
+const obstacle_speed = 40.0;
+const spawn_dist = -150; 
+
+// Game states
+const STATES = {
+    MENU: 'MENU',
+    COUNTDOWN: 'COUNTDOWN',
+    PLAYING: 'PLAYING',
+    PAUSED: 'PAUSED',
+    GAMEOVER: 'GAMEOVER',
+    CLEAR: 'CLEAR'
+};
+let gameState = STATES.MENU;
+
+// Invincibility state
+let isInvincible = false;
+let invincibilityTimer = 0;
+const INVINCIBILITY_DURATION = 1.5;
+
+// HP state
+const MAX_HP = 10;
+let playerHP = MAX_HP;
+
+// Distance & Speed settings
+const GOAL_DISTANCE = 1000;
+const BASE_SPEED = 30.0;
+const MAX_SPEED = 50.0;
+
+let distanceTraveled = 0;
+let currentSpeed = BASE_SPEED;
+let distanceSinceLastSpawn = 0;
+let nextSpawnDistance = 30.0 + Math.random() * 40.0;
 
 let scene, camera, renderer, controls, cube, player, tree, rock, log;
 
@@ -43,6 +72,7 @@ function init() {
     initLighting();
     initEnvironment();
     addKeysListener();
+    setupUIListeners();
     renderer.setAnimationLoop( animate );
 
 }
@@ -180,70 +210,35 @@ function initEnvironment() {
     player.add(basket);
 
     scene.add(player);
-
-
-    // // Obstaclesd
-    // // 1. Tree
-    // const tree = new THREE.Group();
-    
-    // const trunk = new THREE.Mesh(
-    //     new THREE.CylinderGeometry(0.3, 0.3, 2, 32),
-    //     new THREE.MeshPhongMaterial({ color: 0x8b4513 })
-    // );
-    // trunk.position.y = 0;
-    // tree.add(trunk);
-
-    // const leaves = new THREE.Mesh(
-    //     new THREE.ConeGeometry(1, 3, 32),
-    //     new THREE.MeshPhongMaterial({ color: 0x228b22 })
-    // );
-    // leaves.position.y = 2;
-    // tree.add(leaves);
-
-    // tree.position.set(2, 1, -10);
-    // scene.add(tree);
-
-    // // 2. Rock
-    // const rock = new THREE.Mesh(
-    //     new THREE.DodecahedronGeometry(1.5, 0),
-    //     new THREE.MeshPhongMaterial({ color: 0x808080 })
-    // );
-    // rock.position.set(-2, 0.5, -20);
-    // scene.add(rock);
-
-    // // 3. Log
-    // const log = new THREE.Mesh(
-    //     new THREE.CylinderGeometry(0.7, 0.7, 1.5, 32),
-    //     new THREE.MeshPhongMaterial({ color: 0x502010 })
-    // );
-    // log.position.set(0, 0.5, -5);
-    // log.rotation.x = Math.PI / 2;
-    // log.rotation.z = Math.PI / 2;
-    // scene.add(log);
-    
-    spawnObstacle(-2, -20);
-    spawnObstacle(2, -40);
-    spawnObstacle(0, -5);
 }
 
 function addKeysListener() {
     window.addEventListener('keydown', (event) => {
         keyboard[event.code] = true;
+        if (event.code === 'Escape') {
+            if (gameState === STATES.PLAYING) {
+                setGameState(STATES.PAUSED);
+            } else if (gameState === STATES.PAUSED) {
+                setGameState(STATES.PLAYING);
+            }
+        }
     });
     window.addEventListener('keyup', (event) => {
         keyboard[event.code] = false;
     });
 }
-addKeysListener();
 
 function movePlayer(delta) {
+    // Scale lateral movement speed relative to the player's forward speed (20% of currentSpeed)
+    const activePlayerSpeed = currentSpeed * 0.2;
+
     // Left movement on A
     if(keyboard["KeyA"] || keyboard["ArrowLeft"]) {
-        playerX -= playerSpeed * delta;
+        playerX -= activePlayerSpeed * delta;
     }
     // right movement on D
     if(keyboard["KeyD"] || keyboard["ArrowRight"]) {
-        playerX += playerSpeed * delta;
+        playerX += activePlayerSpeed * delta;
     }
     playerX = Math.max(-4, Math.min(4, playerX));
     player.position.set(playerX, 0.8, 0);
@@ -309,7 +304,7 @@ function moveObstacles(delta) {
     for (let i = obstacles.length - 1; i >= 0; i--) {
         const cur_obs = obstacles[i];
 
-        cur_obs.z += obstacle_speed * delta;
+        cur_obs.z += currentSpeed * delta;
 
         const T = translationMatrix(cur_obs.x, cur_obs.y, cur_obs.z);
 
@@ -318,9 +313,6 @@ function moveObstacles(delta) {
         if (cur_obs.z > 10) {
             scene.remove(cur_obs.mesh);
             obstacles.splice(i, 1);
-
-            const randomLane = (Math.floor(Math.random() * 3) - 1) * 1.5;
-            spawnObstacle(randomLane, spawn_dist);
         }
     }
 }
@@ -406,14 +398,218 @@ function animate(timestamp) {
     timer.update(timestamp);
     const delta = timer.getDelta();
     const ani_delta = clock.getDelta();
-    movePlayer(delta);
-    // followPlayer();
-    moveObstacles(ani_delta);
+    
+    if (gameState === STATES.PLAYING) {
+        movePlayer(delta);
+        moveObstacles(ani_delta);
+        checkCollisions();
+
+        // Dynamic Speed: gradually accelerate
+        currentSpeed = Math.min(MAX_SPEED, currentSpeed + 1 * delta);
+
+        // Distance tracking
+        distanceTraveled += currentSpeed * delta * 0.15;
+        updateHUD();
+
+        // Check Goal Reached
+        if (distanceTraveled >= GOAL_DISTANCE) {
+            setGameState(STATES.CLEAR);
+        } else {
+            // Distance-based spawning
+            distanceSinceLastSpawn += currentSpeed * delta;
+            if (distanceSinceLastSpawn >= nextSpawnDistance) {
+                const lanes = [-3, 0, 3];
+                const shuffled = [...lanes].sort(() => 0.5 - Math.random());
+                const spawnCount = Math.floor(Math.random() * 2) + 1; // 1 or 2
+                for (let i = 0; i < spawnCount; i++) {
+                    spawnObstacle(shuffled[i], spawn_dist);
+                }
+                nextSpawnDistance = 30.0 + Math.random() * 40.0; // 30m to 70m
+                distanceSinceLastSpawn = 0;
+            }
+        }
+    }
+
+    // Process invincibility ticking and blinking effect
+    if (isInvincible) {
+        invincibilityTimer -= delta;
+        if (player) {
+            // Blink visible status every 0.1 seconds
+            player.visible = Math.floor(invincibilityTimer * 10) % 2 === 0;
+        }
+        if (invincibilityTimer <= 0) {
+            isInvincible = false;
+            if (player) {
+                player.visible = true;
+            }
+        }
+    }
 
 	renderer.render( scene, camera );
 
     controls.update();
 
+}
+
+// UI & Game State Management Helpers
+function setGameState(state) {
+    gameState = state;
+    
+    const menuScreen = document.getElementById('menu-screen');
+    const countdownScreen = document.getElementById('countdown-screen');
+    const pauseScreen = document.getElementById('pause-screen');
+    const gameoverScreen = document.getElementById('gameover-screen');
+    const clearScreen = document.getElementById('clear-screen');
+    const fruitsHud = document.getElementById('fruits-hud');
+    const distanceHud = document.getElementById('distance-hud');
+
+    menuScreen.classList.add('hidden');
+    countdownScreen.classList.add('hidden');
+    pauseScreen.classList.add('hidden');
+    gameoverScreen.classList.add('hidden');
+    clearScreen.classList.add('hidden');
+
+    if (state === STATES.MENU) {
+        menuScreen.classList.remove('hidden');
+        fruitsHud.classList.add('hidden');
+        distanceHud.classList.add('hidden');
+    } else if (state === STATES.COUNTDOWN) {
+        countdownScreen.classList.remove('hidden');
+        fruitsHud.classList.remove('hidden');
+        distanceHud.classList.remove('hidden');
+    } else if (state === STATES.PLAYING) {
+        fruitsHud.classList.remove('hidden');
+        distanceHud.classList.remove('hidden');
+    } else if (state === STATES.PAUSED) {
+        pauseScreen.classList.remove('hidden');
+        fruitsHud.classList.remove('hidden');
+        distanceHud.classList.remove('hidden');
+    } else if (state === STATES.GAMEOVER) {
+        gameoverScreen.classList.remove('hidden');
+        fruitsHud.classList.remove('hidden');
+        distanceHud.classList.remove('hidden');
+    } else if (state === STATES.CLEAR) {
+        clearScreen.classList.remove('hidden');
+        fruitsHud.classList.remove('hidden');
+        distanceHud.classList.remove('hidden');
+    }
+}
+
+function resetGame() {
+    // Clear all existing obstacles from scene
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        scene.remove(obstacles[i].mesh);
+    }
+    obstacles.length = 0;
+
+    // Reset player position
+    playerX = 0;
+    if (player) {
+        player.position.set(0, 0.8, 0);
+        player.visible = true;
+    }
+
+    // Reset distance counters
+    distanceTraveled = 0;
+    distanceSinceLastSpawn = 0;
+    nextSpawnDistance = 30.0 + Math.random() * 40.0;
+    currentSpeed = BASE_SPEED;
+
+    // Reset invincibility
+    isInvincible = false;
+    invincibilityTimer = 0;
+
+    // Reset HP
+    playerHP = MAX_HP;
+    updateHUD();
+}
+
+function updateHUD() {
+    const hpValue = document.getElementById('hp-value');
+    if (hpValue) {
+        hpValue.innerText = playerHP;
+    }
+    const distanceValue = document.getElementById('distance-value');
+    if (distanceValue) {
+        distanceValue.innerText = Math.floor(distanceTraveled);
+    }
+    const speedValue = document.getElementById('speed-value');
+    if (speedValue) {
+        speedValue.innerText = Math.floor(currentSpeed);
+    }
+}
+
+function startCountdown() {
+    setGameState(STATES.COUNTDOWN);
+    resetGame();
+
+    const countdownText = document.getElementById('countdown-text');
+    let count = 3;
+    countdownText.innerText = count;
+
+    const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            countdownText.innerText = count;
+        } else if (count === 0) {
+            countdownText.innerText = 'GO!';
+        } else {
+            clearInterval(interval);
+            setGameState(STATES.PLAYING);
+        }
+    }, 1000);
+}
+
+function setupUIListeners() {
+    document.getElementById('start-btn').addEventListener('click', () => {
+        startCountdown();
+    });
+    document.getElementById('resume-btn').addEventListener('click', () => {
+        setGameState(STATES.PLAYING);
+    });
+    document.getElementById('restart-btn').addEventListener('click', () => {
+        setGameState(STATES.MENU);
+        resetGame();
+    });
+    document.getElementById('try-again-btn').addEventListener('click', () => {
+        setGameState(STATES.MENU);
+        resetGame();
+    });
+    document.getElementById('clear-again-btn').addEventListener('click', () => {
+        setGameState(STATES.MENU);
+        resetGame();
+    });
+}
+
+function checkCollisions() {
+    if (isInvincible) return;
+
+    // Collision box dimensions
+    const hitWidth = 1.2;
+    const hitLength = 1.2;
+
+    for (let i = 0; i < obstacles.length; i++) {
+        const obs = obstacles[i];
+
+        // Player is at z = 0, x = playerX
+        const dx = Math.abs(playerX - obs.x);
+        const dz = Math.abs(0 - obs.z);
+
+        if (dx < hitWidth && dz < hitLength) {
+            isInvincible = true;
+            invincibilityTimer = INVINCIBILITY_DURATION;
+            
+            playerHP--;
+            currentSpeed = BASE_SPEED; // Reset speed back to BASE on collision
+            updateHUD();
+            console.log("Collision detected! HP is now:", playerHP);
+
+            if (playerHP <= 0) {
+                setGameState(STATES.GAMEOVER);
+            }
+            break; 
+        }
+    }
 }
 
 init();
